@@ -1,0 +1,116 @@
+# Local development stack: `make dev`.
+# Source folders are bind-mounted for hot reload; node_modules stays inside the image.
+name: feature-flags
+
+x-app: &app
+  image: feature-flags-app:dev
+  build:
+    context: .
+    target: app
+  init: true
+  environment: &app-env
+    DATABASE_URL: postgres://${POSTGRES_USER:-flags}:${POSTGRES_PASSWORD:-flags}@db:5432/${POSTGRES_DB:-flags}
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-flags}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flags}
+      POSTGRES_DB: ${POSTGRES_DB:-flags}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    # Published on 5433 (not 5432) to avoid clashing with a local Postgres.
+    # Only `make ui` needs it, since there the apps run on the host. `make psql` opens a shell.
+    ports:
+      - '${DB_PORT:-5433}:5432'
+
+  migrate:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'src/db/migrate.ts']
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/drizzle:/app/apps/api/drizzle
+      - ./packages/shared/src:/app/packages/shared/src
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'watch', 'src/server.ts']
+    environment:
+      <<: *app-env
+      PORT: 4000
+    ports:
+      - '${API_PORT:-4000}:4000'
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  worker:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'watch', 'src/worker.ts']
+    environment:
+      <<: *app-env
+      # Outbox tuning (OUTBOX_MAX_ATTEMPTS, OUTBOX_BATCH_SIZE, ...) defaults live in src/config.ts.
+      WEBHOOK_URL: http://webhook-receiver:4100/webhooks/feature-flags
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      webhook-receiver:
+        condition: service_started
+
+  webhook-receiver:
+    <<: *app
+    working_dir: /app/apps/webhook-receiver
+    command: ['./node_modules/.bin/tsx', 'watch', 'src/server.ts']
+    environment:
+      PORT: 4100
+    ports:
+      - '${RECEIVER_PORT:-4100}:4100'
+    volumes:
+      - ./apps/webhook-receiver/src:/app/apps/webhook-receiver/src
+
+  web:
+    <<: *app
+    working_dir: /app/apps/web
+    command: ['./node_modules/.bin/vite']
+    environment:
+      API_PROXY_TARGET: http://api:4000
+      CHOKIDAR_USEPOLLING: 'true'
+    ports:
+      - '${WEB_PORT:-5173}:5173'
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./packages/shared/src:/app/packages/shared/src
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:

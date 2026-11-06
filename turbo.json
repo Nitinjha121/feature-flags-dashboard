@@ -1,0 +1,20 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalPassThroughEnv": ["DATABASE_URL", "WEBHOOK_URL"],
+  "tasks": {
+    "@ff/api#db:migrate": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@ff/api#db:migrate"]
+    },
+    "dev:worker": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@ff/api#db:migrate"]
+    }
+  }
+}

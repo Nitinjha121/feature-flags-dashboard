@@ -1,0 +1,139 @@
+# Isolated, throwaway stack for `make test` (run as compose project "ff-test").
+# Fresh tmpfs database every run, no host ports (runs fine while `make dev` is up),
+# code baked into the image (no bind mounts) so it tests exactly what is committed.
+
+x-app: &app
+  image: feature-flags-app:test
+  build:
+    context: .
+    target: app
+  init: true
+  environment: &app-env
+    DATABASE_URL: postgres://flags:flags@db:5432/flags
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flags
+      POSTGRES_PASSWORD: flags
+      POSTGRES_DB: flags
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flags -d flags']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  # --- tools, run one at a time by scripts/test.sh -------------------------------
+  checks:
+    <<: *app
+    profiles: [tools]
+    working_dir: /app
+    command: ['sh', '-c', 'pnpm lint && pnpm typecheck']
+
+  api-tests:
+    <<: *app
+    profiles: [tools]
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/vitest', 'run']
+    environment:
+      TEST_DATABASE_URL: postgres://flags:flags@db:5432/flags_it
+    depends_on:
+      db:
+        condition: service_healthy
+
+  e2e:
+    image: feature-flags-e2e:test
+    build:
+      context: .
+      target: e2e
+    profiles: [tools]
+    command: ['npx', 'playwright', 'test']
+    environment:
+      BASE_URL: http://web:5173
+      RECEIVER_URL: http://webhook-receiver:4100
+    depends_on:
+      web:
+        condition: service_healthy
+      worker:
+        condition: service_started
+
+  # --- the application under test ---------------------------------------------------
+  migrate:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'src/db/migrate.ts']
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'src/server.ts']
+    environment:
+      <<: *app-env
+      PORT: 4000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 1s
+      timeout: 3s
+      retries: 60
+
+  worker:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ['./node_modules/.bin/tsx', 'src/worker.ts']
+    environment:
+      <<: *app-env
+      WEBHOOK_URL: http://webhook-receiver:4100/webhooks/feature-flags
+      OUTBOX_POLL_INTERVAL_MS: 300
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      webhook-receiver:
+        condition: service_healthy
+
+  webhook-receiver:
+    <<: *app
+    working_dir: /app/apps/webhook-receiver
+    command: ['./node_modules/.bin/tsx', 'src/server.ts']
+    environment:
+      PORT: 4100
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4100/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 1s
+      timeout: 3s
+      retries: 60
+
+  web:
+    <<: *app
+    working_dir: /app/apps/web
+    command: ['./node_modules/.bin/vite']
+    environment:
+      API_PROXY_TARGET: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:5173/').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 1s
+      timeout: 3s
+      retries: 60

@@ -1,0 +1,287 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/*
+ * Theming: the raw design tokens below are plain CSS custom properties that switch between
+ * light and dark. `@theme inline` exposes them to Tailwind, so `bg-surface`, `text-muted` etc.
+ * follow the active theme with no `dark:` variants anywhere in the components.
+ * Tailwind's default palette is removed on purpose: colours only come from these tokens.
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --brand: #273a60;
+  --brand-light: #3c5280;
+  --accent: #f35b04;
+  --accent-hover: #d94f03;
+  --accent-fg: #ffffff;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --chip: #f1f5f9;
+  --chip-border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --danger: #be123c;
+  --success: #047857;
+  --warning: #b45309;
+  --live: #10b981;
+  --elevation-card: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --elevation-knob: 0 1px 2px rgba(15, 23, 42, 0.25);
+  --elevation-dialog: 0 20px 50px rgba(15, 23, 42, 0.2);
+  --backdrop: rgba(15, 23, 42, 0.45);
+
+  --header-bg: #273a60;
+  --header-fg: #ffffff;
+  --header-fg-muted: #cbd5e1;
+  --header-border: #1e2d4a;
+  --header-control-bg: #1b2a48;
+  --header-control-border: rgba(255, 255, 255, 0.15);
+
+  --input-bg: #f8fafc;
+
+  --badge-dev-bg: #f1f5f9;
+  --badge-dev-fg: #475569;
+  --badge-dev-border: #e2e8f0;
+  --badge-staging-bg: #fef3c7;
+  --badge-staging-fg: #b45309;
+  --badge-staging-border: #fde68a;
+  --badge-prod-bg: #ffe4e6;
+  --badge-prod-fg: #e11d48;
+  --badge-prod-border: #fecdd3;
+
+  --action-created: #1d4ed8;
+  --action-created-bg: #eff6ff;
+  --action-created-border: #bfdbfe;
+  --action-created-dot: #3b82f6;
+  --action-enabled: #047857;
+  --action-enabled-bg: #ecfdf5;
+  --action-enabled-border: #a7f3d0;
+  --action-enabled-dot: #10b981;
+  --action-disabled: #be123c;
+  --action-disabled-bg: #fff1f2;
+  --action-disabled-border: #fecdd3;
+  --action-disabled-dot: #f43f5e;
+
+  --switch-off-bg: #cbd5e1;
+  --switch-knob-bg: #ffffff;
+  --scrollbar: #cbd5e1;
+}
+
+/* Dark values, applied by an explicit choice or by the OS when no choice was made. */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --brand-light: #8aa6e0;
+  --accent-hover: #ff6f1f;
+  --bg: #0b1120;
+  --surface: #131b2c;
+  --surface-muted: #172034;
+  --border: #253046;
+  --border-subtle: #1c2538;
+  --chip: #1e283c;
+  --chip-border: #2c384f;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --danger: #fb7185;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --live: #34d399;
+  --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-knob: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-dialog: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --backdrop: rgba(0, 0, 0, 0.6);
+
+  --header-bg: #111827;
+  --header-fg: #e2e8f0;
+  --header-fg-muted: #94a3b8;
+  --header-border: #1f2937;
+  --header-control-bg: #1b2436;
+  --header-control-border: rgba(226, 232, 240, 0.15);
+
+  --input-bg: #172034;
+
+  --badge-dev-bg: #1e283c;
+  --badge-dev-fg: #cbd5e1;
+  --badge-dev-border: #334155;
+  --badge-staging-bg: #3a2c0b;
+  --badge-staging-fg: #fcd34d;
+  --badge-staging-border: #6b4f12;
+  --badge-prod-bg: #3f1520;
+  --badge-prod-fg: #fda4af;
+  --badge-prod-border: #6b2131;
+
+  --action-created: #93c5fd;
+  --action-created-bg: #172554;
+  --action-created-border: #1e3a8a;
+  --action-created-dot: #60a5fa;
+  --action-enabled: #6ee7b7;
+  --action-enabled-bg: #052e22;
+  --action-enabled-border: #065f46;
+  --action-enabled-dot: #34d399;
+  --action-disabled: #fda4af;
+  --action-disabled-bg: #3f0d1a;
+  --action-disabled-border: #881337;
+  --action-disabled-dot: #fb7185;
+
+  --switch-off-bg: #334155;
+  --switch-knob-bg: #f1f5f9;
+  --scrollbar: #334155;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --brand-light: #8aa6e0;
+    --accent-hover: #ff6f1f;
+    --bg: #0b1120;
+    --surface: #131b2c;
+    --surface-muted: #172034;
+    --border: #253046;
+    --border-subtle: #1c2538;
+    --chip: #1e283c;
+    --chip-border: #2c384f;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-subtle: #64748b;
+    --danger: #fb7185;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --live: #34d399;
+    --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elevation-knob: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --elevation-dialog: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --backdrop: rgba(0, 0, 0, 0.6);
+
+    --header-bg: #111827;
+    --header-fg: #e2e8f0;
+    --header-fg-muted: #94a3b8;
+    --header-border: #1f2937;
+    --header-control-bg: #1b2436;
+    --header-control-border: rgba(226, 232, 240, 0.15);
+
+    --input-bg: #172034;
+
+    --badge-dev-bg: #1e283c;
+    --badge-dev-fg: #cbd5e1;
+    --badge-dev-border: #334155;
+    --badge-staging-bg: #3a2c0b;
+    --badge-staging-fg: #fcd34d;
+    --badge-staging-border: #6b4f12;
+    --badge-prod-bg: #3f1520;
+    --badge-prod-fg: #fda4af;
+    --badge-prod-border: #6b2131;
+
+    --action-created: #93c5fd;
+    --action-created-bg: #172554;
+    --action-created-border: #1e3a8a;
+    --action-created-dot: #60a5fa;
+    --action-enabled: #6ee7b7;
+    --action-enabled-bg: #052e22;
+    --action-enabled-border: #065f46;
+    --action-enabled-dot: #34d399;
+    --action-disabled: #fda4af;
+    --action-disabled-bg: #3f0d1a;
+    --action-disabled-border: #881337;
+    --action-disabled-dot: #fb7185;
+
+    --switch-off-bg: #334155;
+    --switch-knob-bg: #f1f5f9;
+    --scrollbar: #334155;
+  }
+}
+
+@theme inline {
+  --color-*: initial;
+
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-chip: var(--chip);
+  --color-chip-border: var(--chip-border);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-live: var(--live);
+  --color-backdrop: var(--backdrop);
+
+  --color-header: var(--header-bg);
+  --color-header-fg: var(--header-fg);
+  --color-header-muted: var(--header-fg-muted);
+  --color-header-border: var(--header-border);
+  --color-header-control: var(--header-control-bg);
+  --color-header-control-border: var(--header-control-border);
+
+  --color-input: var(--input-bg);
+
+  --color-badge-dev: var(--badge-dev-bg);
+  --color-badge-dev-fg: var(--badge-dev-fg);
+  --color-badge-dev-border: var(--badge-dev-border);
+  --color-badge-staging: var(--badge-staging-bg);
+  --color-badge-staging-fg: var(--badge-staging-fg);
+  --color-badge-staging-border: var(--badge-staging-border);
+  --color-badge-prod: var(--badge-prod-bg);
+  --color-badge-prod-fg: var(--badge-prod-fg);
+  --color-badge-prod-border: var(--badge-prod-border);
+
+  --color-action-created: var(--action-created);
+  --color-action-created-bg: var(--action-created-bg);
+  --color-action-created-border: var(--action-created-border);
+  --color-action-created-dot: var(--action-created-dot);
+  --color-action-enabled: var(--action-enabled);
+  --color-action-enabled-bg: var(--action-enabled-bg);
+  --color-action-enabled-border: var(--action-enabled-border);
+  --color-action-enabled-dot: var(--action-enabled-dot);
+  --color-action-disabled: var(--action-disabled);
+  --color-action-disabled-bg: var(--action-disabled-bg);
+  --color-action-disabled-border: var(--action-disabled-border);
+  --color-action-disabled-dot: var(--action-disabled-dot);
+
+  --color-switch-off: var(--switch-off-bg);
+  --color-switch-knob: var(--switch-knob-bg);
+
+  --shadow-card: var(--elevation-card);
+  --shadow-knob: var(--elevation-knob);
+  --shadow-dialog: var(--elevation-dialog);
+
+  --radius-card: 10px;
+
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'SFMono-Regular', Consolas, Menlo, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+  }
+
+  /* Slim scrollbars for the panels that scroll internally. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar) transparent;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  /* Native <dialog> backdrop can't take utility classes. */
+  dialog::backdrop {
+    background: var(--backdrop);
+  }
+}
